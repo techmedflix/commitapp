@@ -2,6 +2,12 @@
   "buildCommand": "yarn build",
   "outputDirectory": "dist",
   "framework": null,
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
   "rewrites": [
     { "source": "/api", "destination": "/api" },
     { "source": "/api/(.*)", "destination": "/api" },

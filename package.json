@@ -8,7 +8,8 @@
     "dev:web": "vite",
     "dev:api": "tsx watch server/index.ts",
     "db:migrate": "tsx server/migrate.ts",
-    "build": "tsc -b && vite build",
+    "build:api": "esbuild server/vercel-handler.ts --bundle --platform=node --target=node20 --format=esm --outfile=api/index.js --packages=external",
+    "build": "tsc -b && vite build && yarn build:api",
     "start": "NODE_ENV=production tsx server/index.ts",
     "lint": "oxlint",
     "preview": "vite preview"
@@ -44,6 +45,7 @@
     "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react": "^6.1.0",
     "concurrently": "^10.0.5",
+    "esbuild": "^0.28.2",
     "oxlint": "^1.79.0",
     "tsx": "^4.23.13",
     "typescript": "~6.0.2",

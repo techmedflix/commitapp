@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { createApp } from '../server/app.ts';
-import { assertDb } from '../server/db.ts';
+import { createApp } from './app.ts';
+import { assertDb } from './db.ts';
 
 const app = createApp();
 
@@ -18,7 +18,7 @@ function ensureDb() {
 
 /**
  * Vercel serverless entry — Express handles `/api/*`.
- * Static SPA assets are served by Vercel from `dist/`.
+ * Bundled to api/index.js at build time (see build:api).
  */
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   await ensureDb();

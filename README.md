@@ -25,7 +25,8 @@ Multi-tenant commitment tracker. React + Vite frontend, Express API, Postgres vi
 
 ## Deploy on Vercel (frontend + API together)
 
-The repo includes `api/index.ts` + `vercel.json` so one Vercel project serves the SPA and `/api/*`.
+`yarn build` produces the SPA (`dist/`) and a bundled API (`api/index.js` from `server/vercel-handler.ts`).
+Vercel serves both from one project.
 
 ### Env vars on Vercel
 
