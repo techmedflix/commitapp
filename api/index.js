@@ -147,6 +147,7 @@ import { QueryTypes } from "sequelize";
 // server/db.ts
 import { Sequelize } from "sequelize";
 import dotenv from "dotenv";
+import pg from "pg";
 dotenv.config();
 var databaseUrl = process.env.DATABASE_URL || process.env.pg_connStr1 || "";
 if (!databaseUrl) {
@@ -155,6 +156,8 @@ if (!databaseUrl) {
 var useSsl = process.env.DATABASE_SSL === "1" || process.env.DATABASE_SSL === "true" || /sslmode=require/i.test(databaseUrl);
 var sequelize = new Sequelize(databaseUrl, {
   dialect: "postgres",
+  // Explicit module so bundlers / Vercel don't miss the dynamic require('pg')
+  dialectModule: pg,
   logging: process.env.SQL_LOG === "1" ? console.log : false,
   dialectOptions: useSsl ? {
     ssl: {

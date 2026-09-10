@@ -1,5 +1,6 @@
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
+import pg from 'pg';
 
 // Loads local .env when present; on Vercel, platform env vars are already injected.
 dotenv.config();
@@ -21,6 +22,8 @@ const useSsl =
 
 export const sequelize = new Sequelize(databaseUrl, {
   dialect: 'postgres',
+  // Explicit module so bundlers / Vercel don't miss the dynamic require('pg')
+  dialectModule: pg,
   logging: process.env.SQL_LOG === '1' ? console.log : false,
   dialectOptions: useSsl
     ? {
