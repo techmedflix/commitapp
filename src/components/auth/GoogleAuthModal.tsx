@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTaskContext } from '../../context/TaskContext';
 import { PERSONALITY_AVATARS } from '../../data/avatars';
+import type { Organization } from '../../types';
 import {
   loadGoogleGsiScript,
   parseGoogleJwt,
@@ -36,6 +37,7 @@ export const GoogleAuthModal: React.FC = () => {
   const [emailInput, setEmailInput] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(PERSONALITY_AVATARS[0].url);
+  const [googleCredential, setGoogleCredential] = useState<string | null>(null);
 
   const [orgNameInput, setOrgNameInput] = useState('');
   const [inviteCodeInput, setInviteCodeInput] = useState('');
@@ -43,17 +45,17 @@ export const GoogleAuthModal: React.FC = () => {
   const [joinSubmitted, setJoinSubmitted] = useState(false);
   const [requestedOrgName, setRequestedOrgName] = useState('');
   const [googleGsiLoaded, setGoogleGsiLoaded] = useState(false);
+  const [targetOrg, setTargetOrg] = useState<Organization | undefined>(undefined);
+  const [submitting, setSubmitting] = useState(false);
 
   const googleBtnContainerRef = useRef<HTMLDivElement>(null);
-
-  // Target org if invited
-  const targetOrg = pendingInviteCode ? getOrgByInviteCode(pendingInviteCode) : undefined;
 
   // Load Google Identity Services SDK on modal open
   useEffect(() => {
     if (isGoogleAuthModalOpen) {
       if (pendingInviteCode) {
         setInviteCodeInput(pendingInviteCode);
+        void getOrgByInviteCode(pendingInviteCode).then((org) => setTargetOrg(org));
       }
 
       loadGoogleGsiScript().then((success) => {
@@ -62,6 +64,7 @@ export const GoogleAuthModal: React.FC = () => {
         }
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch invite org when code/modal changes
   }, [isGoogleAuthModalOpen, pendingInviteCode]);
 
   // Initialize and Render Real Google OAuth Sign-In Button
@@ -74,6 +77,7 @@ export const GoogleAuthModal: React.FC = () => {
             if (response?.credential) {
               const googleProfile = parseGoogleJwt(response.credential);
               if (googleProfile) {
+                setGoogleCredential(response.credential);
                 handleRealGoogleSuccess(googleProfile);
               }
             }
@@ -113,37 +117,59 @@ export const GoogleAuthModal: React.FC = () => {
   const handleCustomEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim()) return;
+    setGoogleCredential(null);
     const fallbackName = emailInput.split('@')[0];
     setDisplayName((prev) => prev || fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1));
     setStep(2);
   };
 
-  const handleProfileComplete = (e: React.FormEvent) => {
+  const handleProfileComplete = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!displayName.trim()) return;
-
-    // Sign in user
-    signInWithGoogle(emailInput, displayName, selectedAvatarUrl);
-
-    // Move to Org Step
-    setStep(3);
+    if (!displayName.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await signInWithGoogle(
+        emailInput,
+        displayName,
+        selectedAvatarUrl,
+        googleCredential || undefined
+      );
+      setStep(3);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Sign-in failed', 'warning');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleCreateOrgSubmit = (e: React.FormEvent) => {
+  const handleCreateOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orgNameInput.trim()) return;
-    createOrganization(orgNameInput);
-    setIsGoogleAuthModalOpen(false);
-    setStep(1);
+    if (!orgNameInput.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await createOrganization(orgNameInput);
+      setIsGoogleAuthModalOpen(false);
+      setStep(1);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to create org', 'warning');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleJoinOrgSubmit = (codeToUse: string) => {
-    const res = requestToJoinOrg(codeToUse);
-    if (res.success && res.org) {
-      setRequestedOrgName(res.org.name);
-      setJoinSubmitted(true);
-    } else {
-      showToast(res.message, 'warning');
+  const handleJoinOrgSubmit = async (codeToUse: string) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await requestToJoinOrg(codeToUse);
+      if (res.success && res.org) {
+        setRequestedOrgName(res.org.name);
+        setJoinSubmitted(true);
+      } else {
+        showToast(res.message, 'warning');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 

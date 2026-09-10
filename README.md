@@ -1,33 +1,50 @@
-# React + TypeScript + Vite
+# Commit
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Multi-tenant commitment tracker. React + Vite frontend, Express API, Postgres via Sequelize (raw SQL).
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copy `.env.example` → `.env` and set `DATABASE_URL` (Postgres).
+2. Install: `yarn`
+3. Migrate: `yarn db:migrate`
+4. Run API + web: `yarn dev`
 
-## React Compiler
+- Web: http://localhost:5173 (proxies `/api` → `:3001`)
+- API: http://localhost:3001
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Scripts
 
-## Expanding the Oxlint configuration
+| Script | Purpose |
+|--------|---------|
+| `yarn dev` | API + Vite together |
+| `yarn dev:api` | API only |
+| `yarn dev:web` | Frontend only |
+| `yarn build` | Build SPA to `dist/` |
+| `yarn start` | Production: serve `dist/` + API on one port |
+| `yarn db:migrate` | Apply SQL schema |
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Deploy on Vercel (frontend + API together)
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+The repo includes `api/index.ts` + `vercel.json` so one Vercel project serves the SPA and `/api/*`.
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
- 
+### Env vars on Vercel
+
+**Server (safe — not exposed to the browser):**
+
+| Variable | Notes |
+|----------|--------|
+| `DATABASE_URL` | Postgres connection string |
+| `DATABASE_SSL` | `1` (recommended for hosted DB) |
+| `JWT_SECRET` | Long random secret |
+| `GOOGLE_CLIENT_ID` | Same Google OAuth client ID |
+
+**Client (embedded in the JS bundle):**
+
+| Variable | Notes |
+|----------|--------|
+| `VITE_GOOGLE_CLIENT_ID` | Same Google client ID |
+| `VITE_API_BASE_URL` | `/api` (same origin) |
+
+Do **not** use `VITE_DATABASE_URL`.
+
+Also add your Vercel domain under Google Cloud Console → OAuth client → Authorized JavaScript origins.

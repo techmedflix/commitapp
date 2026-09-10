@@ -47,11 +47,11 @@ export const CreateTaskModal: React.FC = () => {
 
   if (!isCreateModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const newTask = createTask({
+    const newTask = await createTask({
       title,
       assigneeId,
       requestedDeadline: requestedDeadline || undefined,

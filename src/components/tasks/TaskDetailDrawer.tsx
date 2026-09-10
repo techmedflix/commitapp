@@ -101,8 +101,8 @@ export const TaskDetailDrawer: React.FC = () => {
     setNewCommentText('');
   };
 
-  const handleNudge = () => {
-    const res = nudgeAssignee(task.id);
+  const handleNudge = async () => {
+    const res = await nudgeAssignee(task.id);
     if (res.success) {
       setJustNudged(true);
       setTimeout(() => setJustNudged(false), 3000);

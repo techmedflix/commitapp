@@ -48,9 +48,9 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, mode }) => {
   const isDoer = Boolean(activeUser && task.assigneeId === activeUser.id);
   const isCreator = Boolean(activeUser && task.creatorId === activeUser.id);
 
-  const handleNudge = (e: React.MouseEvent) => {
+  const handleNudge = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const res = nudgeAssignee(task.id);
+    const res = await nudgeAssignee(task.id);
     if (res.success) {
       setJustNudged(true);
       setTimeout(() => setJustNudged(false), 3000);
