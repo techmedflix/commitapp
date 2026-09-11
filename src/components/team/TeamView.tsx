@@ -11,6 +11,7 @@ import {
   Building2,
   ShieldAlert,
   Link,
+  Loader2,
 } from 'lucide-react';
 
 export const TeamView: React.FC = () => {
@@ -31,6 +32,7 @@ export const TeamView: React.FC = () => {
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>('Member');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedMember = orgUsers.find((u) => u.id === selectedTeamMemberId);
   const isAdmin = Boolean(activeUser && (activeUser.role === 'Workspace Admin' || (activeOrg && activeOrg.adminId === activeUser.id)));
@@ -59,11 +61,15 @@ export const TeamView: React.FC = () => {
     showToast(`Copied ${activeOrg.name} invite link to clipboard!`, 'info');
   };
 
-  const handleInviteSubmit = (e: React.FormEvent) => {
+  const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteName.trim() || !inviteEmail.trim()) return;
+    if (!inviteName.trim() || !inviteEmail.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     inviteTeamMember(inviteName, inviteEmail, inviteRole);
+    setIsSubmitting(false);
     setIsInviteModalOpen(false);
     setInviteName('');
     setInviteEmail('');
@@ -349,16 +355,25 @@ export const TeamView: React.FC = () => {
             <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => setIsInviteModalOpen(false)}
-                className="px-4 py-2 text-slate-600 font-semibold cursor-pointer"
+                className="px-4 py-2 text-slate-600 font-semibold cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer"
+                disabled={isSubmitting || !inviteName.trim() || !inviteEmail.trim()}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer flex items-center space-x-2"
               >
-                Add Member
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Adding Member...</span>
+                  </>
+                ) : (
+                  <span>Add Member</span>
+                )}
               </button>
             </div>
           </form>

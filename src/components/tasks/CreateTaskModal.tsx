@@ -9,6 +9,7 @@ import {
   Link,
   AlignLeft,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 
 export const CreateTaskModal: React.FC = () => {
@@ -29,6 +30,7 @@ export const CreateTaskModal: React.FC = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [note, setNote] = useState('');
   const [referenceUrl, setReferenceUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto focus title input on open
   useEffect(() => {
@@ -39,6 +41,7 @@ export const CreateTaskModal: React.FC = () => {
       setShowDetails(false);
       setNote('');
       setReferenceUrl('');
+      setIsSubmitting(false);
       setTimeout(() => {
         titleInputRef.current?.focus();
       }, 50);
@@ -49,7 +52,10 @@ export const CreateTaskModal: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     const newTask = await createTask({
       title,
@@ -59,6 +65,7 @@ export const CreateTaskModal: React.FC = () => {
       referenceUrl: referenceUrl || undefined,
     });
 
+    setIsSubmitting(false);
     setIsCreateModalOpen(false);
     setSelectedTaskId(newTask.id);
   };
@@ -232,16 +239,25 @@ export const CreateTaskModal: React.FC = () => {
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => setIsCreateModalOpen(false)}
-              className="px-4 py-2 rounded-lg text-slate-600 hover:text-slate-900 font-semibold transition cursor-pointer"
+              className="px-4 py-2 rounded-lg text-slate-600 hover:text-slate-900 font-semibold transition cursor-pointer disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg shadow-sm transition cursor-pointer active:scale-95"
+              disabled={isSubmitting || !title.trim()}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold px-5 py-2 rounded-lg shadow-sm transition cursor-pointer flex items-center space-x-2"
             >
-              Create Task
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Creating Commitment...</span>
+                </>
+              ) : (
+                <span>Create Task</span>
+              )}
             </button>
           </div>
         </form>

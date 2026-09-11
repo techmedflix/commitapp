@@ -17,6 +17,7 @@ import {
   Clock,
   AlertCircle,
   MessageSquare,
+  Loader2,
 } from 'lucide-react';
 
 interface TaskRowProps {
@@ -37,6 +38,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, mode }) => {
   } = useTaskContext();
 
   const [justNudged, setJustNudged] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<'accept' | 'start' | 'complete' | 'nudge' | null>(null);
 
   const creator = getUserById(task.creatorId);
   const doer = getUserById(task.assigneeId);
@@ -50,26 +52,41 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, mode }) => {
 
   const handleNudge = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (loadingAction) return;
+    setLoadingAction('nudge');
     const res = await nudgeAssignee(task.id);
+    setLoadingAction(null);
     if (res.success) {
       setJustNudged(true);
       setTimeout(() => setJustNudged(false), 3000);
     }
   };
 
-  const handleQuickAccept = (e: React.MouseEvent) => {
+  const handleQuickAccept = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (loadingAction) return;
+    setLoadingAction('accept');
+    await new Promise((resolve) => setTimeout(resolve, 250));
     acceptTask(task.id);
+    setLoadingAction(null);
   };
 
-  const handleQuickStart = (e: React.MouseEvent) => {
+  const handleQuickStart = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (loadingAction) return;
+    setLoadingAction('start');
+    await new Promise((resolve) => setTimeout(resolve, 250));
     startTask(task.id);
+    setLoadingAction(null);
   };
 
-  const handleQuickComplete = (e: React.MouseEvent) => {
+  const handleQuickComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (loadingAction) return;
+    setLoadingAction('complete');
+    await new Promise((resolve) => setTimeout(resolve, 250));
     markComplete(task.id);
+    setLoadingAction(null);
   };
 
   const displayTaskNumber = task.taskNumber || `26/9/${100 + (parseInt(task.id.replace(/\D/g, '')) || 1)}`;
@@ -211,14 +228,17 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, mode }) => {
           {mode === 'waiting_for' && task.status !== 'completed' && (
             <button
               onClick={handleNudge}
-              className={`text-xs font-bold px-2.5 py-1 rounded-md flex items-center space-x-1 border transition cursor-pointer shrink-0 ${
+              disabled={Boolean(loadingAction)}
+              className={`text-xs font-bold px-2.5 py-1 rounded-md flex items-center space-x-1 border transition cursor-pointer shrink-0 disabled:opacity-50 ${
                 justNudged
                   ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                   : 'bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300'
               }`}
               title="Nudge doer"
             >
-              {justNudged ? (
+              {loadingAction === 'nudge' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700 shrink-0" />
+              ) : justNudged ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                   <span>Nudged!</span>
@@ -236,10 +256,15 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, mode }) => {
           {isDoer && task.status === 'awaiting_acknowledgement' && (
             <button
               onClick={handleQuickAccept}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-2.5 py-1 rounded-md flex items-center space-x-1 transition cursor-pointer shadow-2xs shrink-0"
+              disabled={Boolean(loadingAction)}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-semibold px-2.5 py-1 rounded-md flex items-center space-x-1 transition cursor-pointer shadow-2xs shrink-0"
               title="Accept Task"
             >
-              <Check className="w-3.5 h-3.5 shrink-0" />
+              {loadingAction === 'accept' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              ) : (
+                <Check className="w-3.5 h-3.5 shrink-0" />
+              )}
               <span>Accept</span>
             </button>
           )}
@@ -248,10 +273,15 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, mode }) => {
           {isDoer && task.status === 'accepted' && (
             <button
               onClick={handleQuickStart}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-2.5 py-1 rounded-md flex items-center space-x-1 transition cursor-pointer shadow-2xs shrink-0"
+              disabled={Boolean(loadingAction)}
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold px-2.5 py-1 rounded-md flex items-center space-x-1 transition cursor-pointer shadow-2xs shrink-0"
               title="Start working"
             >
-              <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+              {loadingAction === 'start' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+              )}
               <span>Start</span>
             </button>
           )}
@@ -260,10 +290,15 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, mode }) => {
           {(isDoer || isCreator) && task.status !== 'completed' && task.status !== 'awaiting_acknowledgement' && (
             <button
               onClick={handleQuickComplete}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-2.5 py-1 rounded-md flex items-center space-x-1 transition cursor-pointer shadow-2xs shrink-0"
+              disabled={Boolean(loadingAction)}
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold px-2.5 py-1 rounded-md flex items-center space-x-1 transition cursor-pointer shadow-2xs shrink-0"
               title="Mark Complete"
             >
-              <Check className="w-3.5 h-3.5 shrink-0" />
+              {loadingAction === 'complete' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              ) : (
+                <Check className="w-3.5 h-3.5 shrink-0" />
+              )}
               <span>Complete</span>
             </button>
           )}

@@ -21,6 +21,7 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 
 export const GoogleAuthModal: React.FC = () => {
@@ -48,7 +49,7 @@ export const GoogleAuthModal: React.FC = () => {
   const [requestedOrgName, setRequestedOrgName] = useState('');
   const [googleGsiLoaded, setGoogleGsiLoaded] = useState(false);
   const [targetOrg, setTargetOrg] = useState<Organization | undefined>(undefined);
-  const [submitting, setSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const googleBtnContainerRef = useRef<HTMLDivElement>(null);
 
@@ -121,23 +122,26 @@ export const GoogleAuthModal: React.FC = () => {
     setStep(2);
   };
 
-  const handleCustomEmailSubmit = (e: React.FormEvent) => {
+  const handleCustomEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput.trim()) return;
+    if (!emailInput.trim() || isSubmitting) return;
     if (!isAllowedGoogleEmail(emailInput)) {
       showToast(`Only @${ALLOWED_GOOGLE_DOMAIN} Google accounts can sign in`, 'warning');
       return;
     }
+    setIsSubmitting(true);
     setGoogleCredential(null);
     const fallbackName = emailInput.split('@')[0];
     setDisplayName((prev) => prev || fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    setIsSubmitting(false);
     setStep(2);
   };
 
   const handleProfileComplete = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!displayName.trim() || submitting) return;
-    setSubmitting(true);
+    if (!displayName.trim() || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       await signInWithGoogle(
         emailInput,
@@ -149,14 +153,14 @@ export const GoogleAuthModal: React.FC = () => {
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Sign-in failed', 'warning');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleCreateOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orgNameInput.trim() || submitting) return;
-    setSubmitting(true);
+    if (!orgNameInput.trim() || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       await createOrganization(orgNameInput);
       setIsGoogleAuthModalOpen(false);
@@ -164,13 +168,13 @@ export const GoogleAuthModal: React.FC = () => {
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to create org', 'warning');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleJoinOrgSubmit = async (codeToUse: string) => {
-    if (submitting) return;
-    setSubmitting(true);
+    if (!codeToUse.trim() || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const res = await requestToJoinOrg(codeToUse);
       if (res.success && res.org) {
@@ -180,7 +184,7 @@ export const GoogleAuthModal: React.FC = () => {
         showToast(res.message, 'warning');
       }
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -243,20 +247,30 @@ export const GoogleAuthModal: React.FC = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition cursor-pointer text-sm flex items-center justify-center space-x-2 shadow-2xs"
+                  disabled={isSubmitting || !emailInput.trim()}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl transition cursor-pointer text-sm flex items-center justify-center space-x-2 shadow-2xs"
                 >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#ffffff"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#ffffff"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                  </svg>
-                  <span>Continue with Google</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Authenticating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                        <path
+                          fill="#ffffff"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#ffffff"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                      </svg>
+                      <span>Continue with Google</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </form>
 
@@ -310,6 +324,7 @@ export const GoogleAuthModal: React.FC = () => {
                     <button
                       key={av.id}
                       type="button"
+                      disabled={isSubmitting}
                       onClick={() => setSelectedAvatarUrl(av.url)}
                       className={`p-2 rounded-xl border flex flex-col items-center space-y-1 transition cursor-pointer relative ${
                         selectedAvatarUrl === av.url
@@ -342,17 +357,28 @@ export const GoogleAuthModal: React.FC = () => {
               <div className="flex items-center space-x-3 pt-2">
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => setStep(1)}
-                  className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl transition cursor-pointer"
+                  className="w-1/3 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-semibold py-2.5 rounded-xl transition cursor-pointer"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center space-x-2 shadow-2xs"
+                  disabled={isSubmitting || !displayName.trim()}
+                  className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center space-x-2 shadow-2xs"
                 >
-                  <span>Continue</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving Profile...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Continue</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -420,11 +446,21 @@ export const GoogleAuthModal: React.FC = () => {
 
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() => handleJoinOrgSubmit(targetOrg.inviteCode)}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition cursor-pointer flex items-center justify-center space-x-2 shadow-2xs"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition cursor-pointer flex items-center justify-center space-x-2 shadow-2xs"
                   >
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>Request to Join {targetOrg.name}</span>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Sending Request...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span>Request to Join {targetOrg.name}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               ) : (
@@ -454,10 +490,20 @@ export const GoogleAuthModal: React.FC = () => {
 
                     <button
                       type="submit"
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center space-x-2 shadow-2xs"
+                      disabled={isSubmitting || !orgNameInput.trim()}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center space-x-2 shadow-2xs"
                     >
-                      <Sparkles className="w-4 h-4" />
-                      <span>Create Organization & Launch</span>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Creating Organization...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          <span>Create Organization & Launch</span>
+                        </>
+                      )}
                     </button>
                   </form>
 
@@ -485,11 +531,20 @@ export const GoogleAuthModal: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleJoinOrgSubmit(inviteCodeInput)}
-                      disabled={!inviteCodeInput.trim()}
+                      disabled={isSubmitting || !inviteCodeInput.trim()}
                       className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center space-x-2"
                     >
-                      <span>Request to Join Organization</span>
-                      <ArrowRight className="w-4 h-4" />
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Sending Request...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Request to Join Organization</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

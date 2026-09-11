@@ -22,6 +22,7 @@ import {
   Send,
   AlertCircle,
   Copy,
+  Loader2,
 } from 'lucide-react';
 
 export const TaskDetailDrawer: React.FC = () => {
@@ -54,6 +55,7 @@ export const TaskDetailDrawer: React.FC = () => {
 
   const [newCommentText, setNewCommentText] = useState('');
   const [justNudged, setJustNudged] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!selectedTaskId) return null;
 
@@ -72,32 +74,46 @@ export const TaskDetailDrawer: React.FC = () => {
   const taskComments = comments.filter((c) => c.taskId === task.id);
   const taskActivities = activities.filter((a) => a.taskId === task.id);
 
-  const handleAcceptSubmit = (e: React.FormEvent) => {
+  const handleAcceptSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 250));
     acceptTask(task.id, etaInput || undefined);
+    setIsSubmitting(false);
     setShowEtaModal(false);
     setEtaInput('');
   };
 
-  const handleBlockSubmit = (e: React.FormEvent) => {
+  const handleBlockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!blockedReasonInput.trim()) return;
+    if (!blockedReasonInput.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 250));
     markBlocked(task.id, blockedReasonInput);
+    setIsSubmitting(false);
     setShowBlockModal(false);
     setBlockedReasonInput('');
   };
 
-  const handleCompleteSubmit = (e: React.FormEvent) => {
+  const handleCompleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 250));
     markComplete(task.id, completionCommentInput || undefined);
+    setIsSubmitting(false);
     setShowCompleteModal(false);
     setCompletionCommentInput('');
   };
 
-  const handleAddCommentSubmit = (e: React.FormEvent) => {
+  const handleAddCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCommentText.trim()) return;
+    if (!newCommentText.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 200));
     addComment(task.id, newCommentText);
+    setIsSubmitting(false);
     setNewCommentText('');
   };
 
@@ -441,16 +457,22 @@ export const TaskDetailDrawer: React.FC = () => {
             <form onSubmit={handleAddCommentSubmit} className="flex space-x-2">
               <input
                 type="text"
+                disabled={isSubmitting}
                 placeholder="Add a lightweight comment..."
                 value={newCommentText}
                 onChange={(e) => setNewCommentText(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-500 font-medium"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-500 font-medium disabled:opacity-50"
               />
               <button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg font-semibold flex items-center space-x-1 transition cursor-pointer"
+                disabled={isSubmitting || !newCommentText.trim()}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-3.5 py-2 rounded-lg font-semibold flex items-center space-x-1 transition cursor-pointer"
               >
-                <Send className="w-3.5 h-3.5" />
+                {isSubmitting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
               </button>
             </form>
           </div>
@@ -483,16 +505,25 @@ export const TaskDetailDrawer: React.FC = () => {
             <div className="flex justify-end space-x-2 pt-2">
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => setShowEtaModal(false)}
-                className="px-4 py-2 text-slate-600 font-semibold cursor-pointer"
+                className="px-4 py-2 text-slate-600 font-semibold cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer"
+                disabled={isSubmitting}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer flex items-center space-x-2"
               >
-                Confirm & Accept
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Accepting...</span>
+                  </>
+                ) : (
+                  <span>Confirm & Accept</span>
+                )}
               </button>
             </div>
           </form>
@@ -529,16 +560,25 @@ export const TaskDetailDrawer: React.FC = () => {
             <div className="flex justify-end space-x-2 pt-2">
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => setShowBlockModal(false)}
-                className="px-4 py-2 text-slate-600 font-semibold cursor-pointer"
+                className="px-4 py-2 text-slate-600 font-semibold cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer"
+                disabled={isSubmitting || !blockedReasonInput.trim()}
+                className="bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer flex items-center space-x-2"
               >
-                Submit & Notify Creator
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Blocking...</span>
+                  </>
+                ) : (
+                  <span>Submit & Notify Creator</span>
+                )}
               </button>
             </div>
           </form>
@@ -571,16 +611,25 @@ export const TaskDetailDrawer: React.FC = () => {
             <div className="flex justify-end space-x-2 pt-2">
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => setShowCompleteModal(false)}
-                className="px-4 py-2 text-slate-600 font-semibold cursor-pointer"
+                className="px-4 py-2 text-slate-600 font-semibold cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer"
+                disabled={isSubmitting}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer flex items-center space-x-2"
               >
-                Complete Task
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Completing...</span>
+                  </>
+                ) : (
+                  <span>Complete Task</span>
+                )}
               </button>
             </div>
           </form>

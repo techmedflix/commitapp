@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTaskContext } from '../../context/TaskContext';
-import { X, UserCheck, UserX, Clock, ShieldCheck, Check } from 'lucide-react';
+import { X, UserCheck, UserX, Clock, ShieldCheck, Check, Loader2 } from 'lucide-react';
 
 export const PendingRequestsModal: React.FC = () => {
   const {
@@ -12,7 +12,30 @@ export const PendingRequestsModal: React.FC = () => {
     rejectJoinRequest,
   } = useTaskContext();
 
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | null>(null);
+
   if (!isPendingRequestsModalOpen) return null;
+
+  const handleApprove = async (reqId: string) => {
+    if (processingId) return;
+    setProcessingId(reqId);
+    setProcessingAction('approve');
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    approveJoinRequest(reqId);
+    setProcessingId(null);
+    setProcessingAction(null);
+  };
+
+  const handleReject = async (reqId: string) => {
+    if (processingId) return;
+    setProcessingId(reqId);
+    setProcessingAction('reject');
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    rejectJoinRequest(reqId);
+    setProcessingId(null);
+    setProcessingAction(null);
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -60,49 +83,75 @@ export const PendingRequestsModal: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {pendingRequestsForActiveOrg.map((req) => (
-                <div
-                  key={req.id}
-                  className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-center justify-between transition hover:border-slate-300"
-                >
-                  <div className="flex items-center space-x-3 min-w-0 flex-1 pr-3">
-                    <img
-                      src={req.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
-                      alt={req.userName}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="font-bold text-slate-900 truncate text-sm">
-                        {req.userName}
-                      </div>
-                      <div className="text-xs text-slate-500 truncate">{req.userEmail}</div>
-                      <div className="text-[11px] text-amber-700 flex items-center space-x-1 mt-0.5">
-                        <Clock className="w-3 h-3" />
-                        <span>Requested via Invite Link</span>
+              {pendingRequestsForActiveOrg.map((req) => {
+                const isProcessingThis = processingId === req.id;
+                const isApproving = isProcessingThis && processingAction === 'approve';
+                const isRejecting = isProcessingThis && processingAction === 'reject';
+
+                return (
+                  <div
+                    key={req.id}
+                    className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-center justify-between transition hover:border-slate-300"
+                  >
+                    <div className="flex items-center space-x-3 min-w-0 flex-1 pr-3">
+                      <img
+                        src={req.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'}
+                        alt={req.userName}
+                        className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-slate-900 truncate text-sm">
+                          {req.userName}
+                        </div>
+                        <div className="text-xs text-slate-500 truncate">{req.userEmail}</div>
+                        <div className="text-[11px] text-amber-700 flex items-center space-x-1 mt-0.5">
+                          <Clock className="w-3 h-3" />
+                          <span>Requested via Invite Link</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center space-x-2 shrink-0">
-                    <button
-                      onClick={() => rejectJoinRequest(req.id)}
-                      className="bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-700 border border-slate-200 hover:border-rose-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1 transition cursor-pointer"
-                    >
-                      <UserX className="w-3.5 h-3.5" />
-                      <span>Reject</span>
-                    </button>
+                    {/* Actions */}
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <button
+                        onClick={() => handleReject(req.id)}
+                        disabled={Boolean(processingId)}
+                        className="bg-white hover:bg-rose-50 disabled:opacity-50 text-rose-600 hover:text-rose-700 border border-slate-200 hover:border-rose-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1 transition cursor-pointer"
+                      >
+                        {isRejecting ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                            <span>Rejecting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="w-3.5 h-3.5" />
+                            <span>Reject</span>
+                          </>
+                        )}
+                      </button>
 
-                    <button
-                      onClick={() => approveJoinRequest(req.id)}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1 transition cursor-pointer shadow-2xs"
-                    >
-                      <UserCheck className="w-3.5 h-3.5" />
-                      <span>Approve</span>
-                    </button>
+                      <button
+                        onClick={() => handleApprove(req.id)}
+                        disabled={Boolean(processingId)}
+                        className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1 transition cursor-pointer shadow-2xs"
+                      >
+                        {isApproving ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Approving...</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
