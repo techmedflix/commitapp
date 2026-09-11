@@ -1,5 +1,5 @@
 {
-  "buildCommand": "yarn build",
+  "buildCommand": "yarn db:migrate && yarn build",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [

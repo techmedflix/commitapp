@@ -19,33 +19,35 @@ Multi-tenant commitment tracker. React + Vite frontend, Express API, Postgres vi
 | `yarn dev` | API + Vite together |
 | `yarn dev:api` | API only |
 | `yarn dev:web` | Frontend only |
-| `yarn build` | Build SPA to `dist/` |
+| `yarn build` | Build SPA + bundle API |
 | `yarn start` | Production: serve `dist/` + API on one port |
-| `yarn db:migrate` | Apply SQL schema |
+| `yarn db:migrate` | Apply pending SQL files in `server/sql/` |
 
 ## Deploy on Vercel (frontend + API together)
 
-`yarn build` produces the SPA (`dist/`) and a bundled API (`api/index.js` from `server/vercel-handler.ts`).
-Vercel serves both from one project.
+`vercel.json` runs **`yarn db:migrate && yarn build`** on each deploy:
 
-### Env vars on Vercel
+1. Applies any new `server/sql/*.sql` files not yet recorded in `schema_migrations`
+2. Builds the SPA (`dist/`) and API bundle (`api/index.js`)
 
-**Server (safe — not exposed to the browser):**
+### Adding a schema change
+
+1. Add a new file, e.g. `server/sql/002_add_foo.sql` (never edit old applied files in prod)
+2. Commit + deploy — migrate runs automatically during the Vercel build
+
+### Vercel env (required at **Build** and Runtime)
 
 | Variable | Notes |
 |----------|--------|
-| `DATABASE_URL` | Postgres connection string |
-| `DATABASE_SSL` | `1` (recommended for hosted DB) |
+| `DATABASE_URL` | Postgres URL — enable for **Build** in Vercel env settings |
+| `DATABASE_SSL` | `1` for RDS |
 | `JWT_SECRET` | Long random secret |
-| `GOOGLE_CLIENT_ID` | Same Google OAuth client ID |
-
-**Client (embedded in the JS bundle):**
-
-| Variable | Notes |
-|----------|--------|
-| `VITE_GOOGLE_CLIENT_ID` | Same Google client ID |
-| `VITE_API_BASE_URL` | `/api` (same origin) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `VITE_GOOGLE_CLIENT_ID` | Same client ID (frontend) |
+| `VITE_API_BASE_URL` | `/api` |
 
 Do **not** use `VITE_DATABASE_URL`.
+
+If Production and Preview share one DB, Preview deploys will also migrate that DB — use a separate Preview DB if you need isolation.
 
 Also add your Vercel domain under Google Cloud Console → OAuth client → Authorized JavaScript origins.
