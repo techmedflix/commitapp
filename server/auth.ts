@@ -10,6 +10,13 @@ const GOOGLE_CLIENT_ID =
 
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
+export const ALLOWED_GOOGLE_DOMAIN = 'medflix.app';
+
+export function isAllowedGoogleEmail(email: string): boolean {
+  const domain = email.trim().toLowerCase().split('@')[1];
+  return domain === ALLOWED_GOOGLE_DOMAIN;
+}
+
 export type AuthUser = { id: string; email: string };
 
 export function signToken(user: AuthUser): string {
@@ -37,8 +44,12 @@ export async function verifyGoogleIdToken(credential: string) {
   if (!payload?.email) {
     throw new Error('Invalid Google token');
   }
+  const email = payload.email.toLowerCase();
+  if (!isAllowedGoogleEmail(email) || (payload.hd && payload.hd !== ALLOWED_GOOGLE_DOMAIN)) {
+    throw new Error(`Sign-in is restricted to @${ALLOWED_GOOGLE_DOMAIN} Google accounts`);
+  }
   return {
-    email: payload.email.toLowerCase(),
+    email,
     name: payload.name || payload.given_name || 'Google User',
     picture: payload.picture as string | undefined,
     sub: payload.sub as string,

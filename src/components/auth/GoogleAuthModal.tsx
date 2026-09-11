@@ -6,6 +6,8 @@ import {
   loadGoogleGsiScript,
   parseGoogleJwt,
   DEFAULT_GOOGLE_CLIENT_ID,
+  ALLOWED_GOOGLE_DOMAIN,
+  isAllowedGoogleEmail,
   type GoogleUserProfile,
 } from '../../utils/googleAuth';
 import {
@@ -73,12 +75,12 @@ export const GoogleAuthModal: React.FC = () => {
       try {
         window.google.accounts.id.initialize({
           client_id: DEFAULT_GOOGLE_CLIENT_ID,
+          hd: ALLOWED_GOOGLE_DOMAIN,
           callback: (response: any) => {
             if (response?.credential) {
               const googleProfile = parseGoogleJwt(response.credential);
               if (googleProfile) {
-                setGoogleCredential(response.credential);
-                handleRealGoogleSuccess(googleProfile);
+                handleRealGoogleSuccess(googleProfile, response.credential);
               }
             }
           },
@@ -104,7 +106,12 @@ export const GoogleAuthModal: React.FC = () => {
   if (!isGoogleAuthModalOpen) return null;
 
   // Handle Real Google OAuth Login Success
-  const handleRealGoogleSuccess = (profile: GoogleUserProfile) => {
+  const handleRealGoogleSuccess = (profile: GoogleUserProfile, credential: string) => {
+    if (!isAllowedGoogleEmail(profile.email)) {
+      showToast(`Only @${ALLOWED_GOOGLE_DOMAIN} Google accounts can sign in`, 'warning');
+      return;
+    }
+    setGoogleCredential(credential);
     setEmailInput(profile.email);
     setDisplayName(profile.name);
     // Select personality avatar based on hash or default
@@ -117,6 +124,10 @@ export const GoogleAuthModal: React.FC = () => {
   const handleCustomEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim()) return;
+    if (!isAllowedGoogleEmail(emailInput)) {
+      showToast(`Only @${ALLOWED_GOOGLE_DOMAIN} Google accounts can sign in`, 'warning');
+      return;
+    }
     setGoogleCredential(null);
     const fallbackName = emailInput.split('@')[0];
     setDisplayName((prev) => prev || fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1));
@@ -219,12 +230,12 @@ export const GoogleAuthModal: React.FC = () => {
               <form onSubmit={handleCustomEmailSubmit} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Google / Gmail Email Address <span className="text-rose-500">*</span>
+                    Medflix Google Email <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="email"
                     required
-                    placeholder="e.g. alex@company.com or rohan@gmail.com"
+                    placeholder={`e.g. you@${ALLOWED_GOOGLE_DOMAIN}`}
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm font-medium text-slate-900"

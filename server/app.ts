@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import {
+  ALLOWED_GOOGLE_DOMAIN,
+  isAllowedGoogleEmail,
   requireAuth,
   signToken,
   verifyGoogleIdToken,
@@ -97,6 +99,12 @@ export function createApp() {
         return;
       }
       const cleanEmail = email.trim().toLowerCase();
+      if (!isAllowedGoogleEmail(cleanEmail)) {
+        res.status(403).json({
+          error: `Sign-in is restricted to @${ALLOWED_GOOGLE_DOMAIN} Google accounts`,
+        });
+        return;
+      }
       const existing = await sqlSelect(`SELECT * FROM users WHERE email = $1 LIMIT 1`, [cleanEmail]);
 
       let userId: string;

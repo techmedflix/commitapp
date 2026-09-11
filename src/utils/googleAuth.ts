@@ -1,5 +1,12 @@
 // Google Identity Services (GIS) Helper
 
+export const ALLOWED_GOOGLE_DOMAIN = 'medflix.app';
+
+export function isAllowedGoogleEmail(email: string): boolean {
+  const domain = email.trim().toLowerCase().split('@')[1];
+  return domain === ALLOWED_GOOGLE_DOMAIN;
+}
+
 export interface GoogleUserProfile {
   email: string;
   name: string;
