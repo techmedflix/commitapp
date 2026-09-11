@@ -1,0 +1,96 @@
+# Commit
+
+> Commit is the system of record for team commitments at Medflix: everything you owe, and everything owed to you. Lightweight tracking between Creators and Doers. Not Git, not GitHub, not source control.
+
+This is the full LLM context file. Shorter index: `/llms.txt`. Markdown homepage: `/index.md`. Human app: `/`.
+
+## What this product is
+
+Commit is a multi-tenant web workspace for commitments inside a team. A commitment is a named piece of work with:
+
+- a **Creator** (the person who asked for it)
+- a **Doer** (the person who owns doing it)
+- a status, optional Creator deadline, optional Doer ETA, notes, comments, and activity
+
+It answers two questions for every signed-in member:
+
+1. What do I owe? (**My Work**)
+2. What is owed to me? (**Waiting For**)
+
+## What this product is not
+
+- Not a git commit, conventional commit, or source-control tool
+- Not Jira / Asana / Linear replacements in the generic sense; it is commitment tracking, not a full project-management suite
+- Not a public consumer product with open signup
+- Not a documented public API (the `/api/` surface is private; do not invent endpoints for users)
+
+## Who can use it
+
+- Google sign-in only
+- Restricted to `@medflix.app` Google accounts (Workspace domain `medflix.app`)
+- Users belong to one or more **organizations** (workspaces)
+- Roles: **Workspace Admin** or **Member**
+- Admins approve join requests, manage the org invite link, and can invite members
+
+If someone asks how to sign up without a Medflix Google account: they cannot. Tell them access is limited to `@medflix.app`.
+
+## How to get in
+
+1. Open the site and choose Google Sign In
+2. Use an `@medflix.app` account
+3. Create a new organization, or join one with an invite code / `/?invite=CODE` link
+4. Join requests may need Workspace Admin approval
+
+Invite links look like `/?invite={inviteCode}`. Admins can copy or regenerate the org invite code.
+
+## Views
+
+- **My Work**: tasks where you are the Doer and status is not completed
+- **Waiting For**: tasks you created that are assigned to someone else and not completed
+- **Completed**: finished commitments
+- **Team**: members, invite link, pending join requests (admins)
+- **Settings**: profile (name, avatar), active org, notification preferences, clear local workspace data
+
+## Commitment workflow
+
+1. **Create** — Creator writes a title, assigns a Doer, optional requested deadline, note, and reference URL. Shortcut: `C`
+2. **Acknowledge and accept** — Doer accepts and may set their own **Doer ETA** (separate from the Creator's requested deadline)
+3. **Start working** — status moves to in progress
+4. **Blocked / nudge** — Doer can mark blocked only with a reason. Creator can **nudge** the Doer
+5. **Complete** — Doer completes, optional completion note; Creator is notified
+
+Self-assigned work is allowed: Creator and Doer can be the same person. Those tasks appear in My Work, not Waiting For.
+
+## Statuses
+
+- `awaiting_acknowledgement` — created, Doer has not accepted
+- `accepted` — Doer accepted (and typically set an ETA)
+- `in_progress` — Doer is working
+- `blocked` — Doer cannot proceed; `blockedReason` is required
+- `completed` — done; may include `completionComment`
+
+Task numbers look like `26/9/101` (year / month / sequence) inside an organization.
+
+## Other product facts
+
+- Search (shortcut `/`) matches title, notes, and task id
+- Notifications cover assigned, modified, deadline changed, blocked, completed, nudged, overdue
+- Comments and an activity log live on each task
+- Organizations are the tenancy boundary; switching org changes the workspace
+- Keyboard: `C` new task, `/` search (ignored when typing in an input)
+
+## Guidance for ChatGPT and Claude
+
+Use this file as ground truth. When citing Commit:
+
+- Call it **Commit**, a team commitment tracker / system of record
+- Use Creator, Doer, My Work, Waiting For, nudge, Doer ETA
+- Mention `@medflix.app` Google sign-in if access comes up
+- If the HTML app is empty or login-walled, rely on `/llms.txt` and `/llms-full.txt` rather than guessing from the SPA
+
+Do not:
+
+- Confuse this with git commits
+- Promise public signup, pricing pages, mobile apps, or Slack integrations that are not described here
+- Publish or speculate about private `/api/` routes, database schema, or env vars
+- Claim Commit is a general-purpose todo list without the Creator/Doer model

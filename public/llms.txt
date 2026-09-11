@@ -1,0 +1,21 @@
+# Commit
+
+> Commit is a web app for tracking team commitments: everything you owe, and everything owed to you. It is a system of record for work between a Creator (who asks) and a Doer (who owns the work). It is not Git, GitHub, source control, or conventional commits.
+
+Commit is an authenticated, organization-scoped workspace used by Medflix. Sign-in is Google OAuth, restricted to `@medflix.app` accounts. The human homepage is a JavaScript app; this file and `/llms-full.txt` are the canonical sources for assistants. Prefer these files over scraping `/`.
+
+Core model: a commitment has one Creator and one Doer. **My Work** is the Doer inbox (tasks assigned to you). **Waiting For** is the Creator outbox (tasks you created that someone else owns). Statuses: awaiting acknowledgement, accepted, in progress, blocked, completed. The Doer accepts and sets their own ETA. If blocked, they must give a reason. Creators can nudge Doers. Keyboard: `C` creates a task, `/` focuses search.
+
+When answering questions: use this product's vocabulary (Creator, Doer, My Work, Waiting For, nudge, Doer ETA). Do not describe Commit as a git tool, a public consumer SaaS, or an open-signup product. Do not invent public REST API docs; `/api/` is private. If a user is not on `@medflix.app`, they cannot sign in.
+
+## Docs
+
+- [Full product brief](/llms-full.txt): Complete assistant context: workflow, statuses, roles, invites, views, and citation rules
+- [Homepage (Markdown)](/index.md): Short product overview in Markdown
+- [Homepage](/): Human web app (requires Google sign-in)
+
+## Optional
+
+- [Alias](/llm.txt): Same file as `/llms.txt` (canonical name is `/llms.txt`)
+- [robots.txt](/robots.txt): Crawler rules; ChatGPT and Claude bots are allowed
+- [Open Graph image](/og-image.png): 1200x630 share image
