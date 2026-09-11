@@ -8,6 +8,11 @@ import { OAuth2Client } from "google-auth-library";
 var JWT_SECRET = process.env.JWT_SECRET || "commit-dev-secret-change-me";
 var GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "";
 var googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
+var ALLOWED_GOOGLE_DOMAIN = "medflix.app";
+function isAllowedGoogleEmail(email) {
+  const domain = email.trim().toLowerCase().split("@")[1];
+  return domain === ALLOWED_GOOGLE_DOMAIN;
+}
 function signToken(user) {
   return jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: "30d" });
 }
@@ -31,8 +36,12 @@ async function verifyGoogleIdToken(credential) {
   if (!payload?.email) {
     throw new Error("Invalid Google token");
   }
+  const email = payload.email.toLowerCase();
+  if (!isAllowedGoogleEmail(email) || payload.hd && payload.hd !== ALLOWED_GOOGLE_DOMAIN) {
+    throw new Error(`Sign-in is restricted to @${ALLOWED_GOOGLE_DOMAIN} Google accounts`);
+  }
   return {
-    email: payload.email.toLowerCase(),
+    email,
     name: payload.name || payload.given_name || "Google User",
     picture: payload.picture,
     sub: payload.sub
@@ -385,6 +394,12 @@ function createApp() {
         return;
       }
       const cleanEmail = email.trim().toLowerCase();
+      if (!isAllowedGoogleEmail(cleanEmail)) {
+        res.status(403).json({
+          error: `Sign-in is restricted to @${ALLOWED_GOOGLE_DOMAIN} Google accounts`
+        });
+        return;
+      }
       const existing = await sqlSelect(`SELECT * FROM users WHERE email = $1 LIMIT 1`, [cleanEmail]);
       let userId;
       if (existing[0]) {
